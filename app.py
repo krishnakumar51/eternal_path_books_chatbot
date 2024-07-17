@@ -36,30 +36,23 @@ with st.sidebar:
     st.subheader("Conversations")
     if st.button("Start New Chat"):
         start_new_chat()
-    
+
     for i, conv in enumerate(st.session_state.conversation_history):
         if st.button(f"Load Chat {i+1}"):
             load_chat(i)
 
-# Reset new_chat flag
 if st.session_state.new_chat:
     st.session_state.new_chat = False
-    st.empty()  
+    st.empty()
 
-# Display current conversation
 messages = st.session_state.current_conversation["messages"]
 for message in messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if message["role"] == "assistant" and "sources" in message:
-            with st.expander("Sources", expanded=True):
-                sources = message["sources"]
-                sources_list = sources.split("\n\n")
-                st.markdown('<div class="custom-expander">', unsafe_allow_html=True)
-                for source in sources_list:
-                    st.markdown(source)
-                    st.markdown("---")
-                st.markdown('</div>', unsafe_allow_html=True)
+            with st.expander("Sources"):
+                for source in message["sources"].split("\n\n"):
+                    st.markdown(f"- {source.strip()}")
 
 faiss_index = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
 llm = get_groq_llm()
@@ -67,30 +60,26 @@ llm = get_groq_llm()
 if prompt := st.chat_input("Ask a question from the PDF files"):
     user_msg = {"role": "user", "content": prompt}
     st.session_state.current_conversation["messages"].append(user_msg)
-    
+
     with st.chat_message("user"):
         st.markdown(prompt)
-    
+
     with st.chat_message("assistant"):
         with st.spinner("Processing..."):
             chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
-            
+
             response = get_response_llm(llm, faiss_index, prompt, chat_history)
-            
+
             st.markdown(response["answer"])
-            
+
             assistant_msg = {
-                "role": "assistant", 
+                "role": "assistant",
                 "content": response["answer"],
                 "sources": response["sources"]
             }
             st.session_state.current_conversation["messages"].append(assistant_msg)
-            
-            with st.expander("Sources", expanded=True):
-                sources = response["sources"]
-                sources_list = sources.split("\n\n")
-                st.markdown('<div class="custom-expander">', unsafe_allow_html=True)
-                for source in sources_list:
-                    st.markdown(source)
+
+            with st.expander("Sources"):
+                for source in response["sources"].split("\n\n"):
+                    st.markdown(f"- {source.strip()}")
                     st.markdown("---")
-                st.markdown('</div>', unsafe_allow_html=True)
