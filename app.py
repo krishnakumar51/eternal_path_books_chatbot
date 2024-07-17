@@ -20,19 +20,33 @@ if "conversation_history" not in st.session_state:
     st.session_state.conversation_history = []
 if "current_conversation" not in st.session_state:
     st.session_state.current_conversation = {"messages": [], "chat_history": []}
+if "new_chat" not in st.session_state:
+    st.session_state.new_chat = False
+
+def start_new_chat():
+    st.session_state.conversation_history.append(st.session_state.current_conversation)
+    st.session_state.current_conversation = {"messages": [], "chat_history": []}
+    st.session_state.new_chat = True
+
+def load_chat(index):
+    st.session_state.current_conversation = st.session_state.conversation_history[index]
+    st.session_state.new_chat = True
 
 with st.sidebar:
     st.subheader("Conversations")
     if st.button("Start New Chat"):
-        st.session_state.conversation_history.append(st.session_state.current_conversation)
-        st.session_state.current_conversation = {"messages": [], "chat_history": []}
-        st.experimental_rerun()
+        start_new_chat()
     
     for i, conv in enumerate(st.session_state.conversation_history):
         if st.button(f"Load Chat {i+1}"):
-            st.session_state.current_conversation = conv
-            st.experimental_rerun()
+            load_chat(i)
 
+# Reset new_chat flag
+if st.session_state.new_chat:
+    st.session_state.new_chat = False
+    st.empty()  # This will clear the previous chat display
+
+# Display current conversation
 messages = st.session_state.current_conversation["messages"]
 for message in messages:
     with st.chat_message(message["role"]):
@@ -70,5 +84,3 @@ if prompt := st.chat_input("Ask a question from the PDF files"):
                 for source in response["sources"].split("\n\n"):
                     st.markdown(source)
                     st.markdown("---")
-
-    st.experimental_rerun()
