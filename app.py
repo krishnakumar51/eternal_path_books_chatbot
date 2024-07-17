@@ -46,14 +46,30 @@ if st.session_state.new_chat:
     st.session_state.new_chat = False
     st.empty()  # This will clear the previous chat display
 
+# Custom CSS for the expander
+st.markdown("""
+    <style>
+    .custom-expander .streamlit-expanderContent {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Display current conversation
 messages = st.session_state.current_conversation["messages"]
 for message in messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if message["role"] == "assistant" and "sources" in message:
-            with st.expander("Sources"):
-                st.markdown(message["sources"])
+            with st.expander("Sources", expanded=True):
+                sources = message["sources"]
+                sources_list = sources.split("\n\n")
+                st.markdown('<div class="custom-expander">', unsafe_allow_html=True)
+                for source in sources_list:
+                    st.markdown(source)
+                    st.markdown("---")
+                st.markdown('</div>', unsafe_allow_html=True)
 
 faiss_index = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
 llm = get_groq_llm()
@@ -80,7 +96,11 @@ if prompt := st.chat_input("Ask a question from the PDF files"):
             }
             st.session_state.current_conversation["messages"].append(assistant_msg)
             
-            with st.expander("Sources"):
-                for source in response["sources"].split("\n\n"):
+            with st.expander("Sources", expanded=True):
+                sources = response["sources"]
+                sources_list = sources.split("\n\n")
+                st.markdown('<div class="custom-expander">', unsafe_allow_html=True)
+                for source in sources_list:
                     st.markdown(source)
                     st.markdown("---")
+                st.markdown('</div>', unsafe_allow_html=True)
