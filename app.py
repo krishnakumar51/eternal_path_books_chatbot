@@ -4,6 +4,8 @@ from qa.retrieval_and_generation import get_groq_llm, get_response_llm
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import os
 
+os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
 if "GROQ_API_KEY" not in os.environ:
     st.error("Please set the GROQ_API_KEY environment variable.")
     st.stop()
