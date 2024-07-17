@@ -44,17 +44,7 @@ with st.sidebar:
 # Reset new_chat flag
 if st.session_state.new_chat:
     st.session_state.new_chat = False
-    st.empty()  # This will clear the previous chat display
-
-# Custom CSS for the expander
-st.markdown("""
-    <style>
-    .custom-expander .streamlit-expanderContent {
-        max-height: 200px;
-        overflow-y: auto;
-    }
-    </style>
-""", unsafe_allow_html=True)
+    st.empty()  
 
 # Display current conversation
 messages = st.session_state.current_conversation["messages"]
