@@ -1,8 +1,5 @@
 langchain
 langchainhub
-bs4
-tiktoken
-openai
 langchain_community
 sentence-transformers
 transformers
@@ -10,4 +7,3 @@ streamlit
 pypdf
 faiss-cpu
 langchain-groq
--e .

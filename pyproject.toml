@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "RAG-assignment"
+version = "0.1.0"
+description = "A Streamlit-based generative AI project"
+authors = [
+    {name = "Krishna Kumar", email = "godkrishnasskal@gmail.com"},
+]
+dependencies = [
+    "langchain",
+    "langchainhub",
+    "langchain_community",
+    "sentence-transformers",
+    "transformers",
+    "streamlit",
+    "pypdf",
+    "faiss-cpu",
+    "langchain-groq",
+]
+requires-python = ">=3.9"
+
+[project.urls]
+"Homepage" = "https://github.com/krishnakumar51/RAG-assginment.git"
