@@ -41,12 +41,11 @@ with st.sidebar:
         if st.button(f"Load Chat {i+1}"):
             load_chat(i)
 
-if st.session_state.new_chat:
-    st.session_state.new_chat = False
-    st.empty()
+faiss_index = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+llm = get_groq_llm()
 
-messages = st.session_state.current_conversation["messages"]
-for message in messages:
+# Display existing messages
+for message in st.session_state.current_conversation["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if message["role"] == "assistant" and "sources" in message:
@@ -54,13 +53,10 @@ for message in messages:
                 for source in message["sources"].split("\n\n"):
                     st.markdown(f"- {source.strip()}")
 
-faiss_index = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
-llm = get_groq_llm()
-
+# Handle new user input
 if prompt := st.chat_input("Ask a question from the PDF files"):
-    user_msg = {"role": "user", "content": prompt}
-    st.session_state.current_conversation["messages"].append(user_msg)
-
+    st.session_state.current_conversation["messages"].append({"role": "user", "content": prompt})
+    
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -82,4 +78,3 @@ if prompt := st.chat_input("Ask a question from the PDF files"):
             with st.expander("Sources"):
                 for source in response["sources"].split("\n\n"):
                     st.markdown(f"- {source.strip()}")
-                    st.markdown("---")
