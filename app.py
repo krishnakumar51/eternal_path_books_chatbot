@@ -16,7 +16,7 @@ st.set_page_config(page_title="QA with DOC", page_icon="📚")
 
 st.header("📚 Chatbot")
 
-# Add custom CSS for text wrapping and icons
+# Add custom CSS for text wrapping
 st.markdown("""
     <style>
     .source-container {
@@ -24,19 +24,6 @@ st.markdown("""
         word-wrap: break-word;
         hyphens: auto;
         white-space: normal;
-    }
-    .message {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    .message-icon {
-        width: 20px;
-        height: 20px;
-        margin-right: 10px;
-    }
-    .message-content {
-        flex-grow: 1;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -69,36 +56,30 @@ with st.sidebar:
 faiss_index = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
 llm = get_groq_llm()
 
-# Function to render messages with icons
-def render_message(role, content):
-    icon = "👤" if role == "user" else "🤖"
-    st.markdown(f"""
-    <div class="message">
-        <span class="message-icon">{icon}</span>
-        <div class="message-content"><strong>{role.capitalize()}:</strong> {content}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
 # Display existing messages
 for message in st.session_state.current_conversation["messages"]:
-    render_message(message['role'], message['content'])
-    if message["role"] == "assistant" and "sources" in message:
-        with st.expander("Sources"):
-            for source in message["sources"].split("\n\n"):
-                st.markdown(f"<div class='source-container'>{source.strip()}</div>", unsafe_allow_html=True)
+    role = message['role']
+    content = message['content']
+    if role == "user":
+        st.chat_message("user").write(content)
+    else:
+        st.chat_message("assistant").write(content)
+        if "sources" in message:
+            with st.expander("Sources"):
+                for source in message["sources"].split("\n\n"):
+                    st.markdown(f"<div class='source-container'>{source.strip()}</div>", unsafe_allow_html=True)
 
 # Handle new user input
 if prompt := st.chat_input("Ask a question from the PDF files"):
     st.session_state.current_conversation["messages"].append({"role": "user", "content": prompt})
-    
-    render_message("user", prompt)
+    st.chat_message("user").write(prompt)
 
     with st.spinner("Processing..."):
         chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
 
         response = get_response_llm(llm, faiss_index, prompt, chat_history)
 
-        render_message("assistant", response['answer'])
+        st.chat_message("assistant").write(response['answer'])
 
         assistant_msg = {
             "role": "assistant",
