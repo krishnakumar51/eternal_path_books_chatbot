@@ -41,37 +41,48 @@ with st.sidebar:
         if st.button(f"Load Chat {i+1}"):
             load_chat(i)
 
+messages_container = st.container()
+
 faiss_index = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
 llm = get_groq_llm()
 
-# Display existing messages
-for message in st.session_state.current_conversation["messages"]:
-    st.write(f"**{message['role'].capitalize()}:** {message['content']}")
-    if message["role"] == "assistant" and "sources" in message:
-        with st.expander("Sources"):
-            for source in message["sources"].split("\n\n"):
-                st.markdown(f"- {source.strip()}")
+def display_messages():
+    messages = st.session_state.current_conversation["messages"]
+    for message in messages:
+        with messages_container.chat_message(message["role"]):
+            st.markdown(message["content"])
+            if message["role"] == "assistant" and "sources" in message:
+                with st.expander("Sources"):
+                    for source in message["sources"].split("\n\n"):
+                        st.markdown(f"- {source.strip()}")
 
-# Handle new user input
+display_messages()
+
 if prompt := st.chat_input("Ask a question from the PDF files"):
-    st.session_state.current_conversation["messages"].append({"role": "user", "content": prompt})
-    
-    st.write(f"**User:** {prompt}")
+    user_msg = {"role": "user", "content": prompt}
+    st.session_state.current_conversation["messages"].append(user_msg)
 
-    with st.spinner("Processing..."):
-        chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
+    with messages_container.chat_message("user"):
+        st.markdown(prompt)
 
-        response = get_response_llm(llm, faiss_index, prompt, chat_history)
+    with messages_container.chat_message("assistant"):
+        with st.spinner("Processing..."):
+            chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
 
-        st.write(f"**Assistant:** {response['answer']}")
+            response = get_response_llm(llm, faiss_index, prompt, chat_history)
 
-        assistant_msg = {
-            "role": "assistant",
-            "content": response["answer"],
-            "sources": response["sources"]
-        }
-        st.session_state.current_conversation["messages"].append(assistant_msg)
+            st.markdown(response["answer"])
 
-        with st.expander("Sources"):
-            for source in response["sources"].split("\n\n"):
-                st.markdown(f"- {source.strip()}")
+            assistant_msg = {
+                "role": "assistant",
+                "content": response["answer"],
+                "sources": response["sources"]
+            }
+            st.session_state.current_conversation["messages"].append(assistant_msg)
+
+            with st.expander("Sources"):
+                for source in response["sources"].split("\n\n"):
+                    st.markdown(f"- {source.strip()}")
+                    st.markdown("---")
+
+    display_messages()
