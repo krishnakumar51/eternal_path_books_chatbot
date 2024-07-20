@@ -16,6 +16,31 @@ st.set_page_config(page_title="QA with DOC", page_icon="📚")
 
 st.header("📚 Chatbot")
 
+# Add custom CSS for text wrapping and icons
+st.markdown("""
+    <style>
+    .source-container {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        hyphens: auto;
+        white-space: normal;
+    }
+    .message {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .message-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+    }
+    .message-content {
+        flex-grow: 1;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 if "conversation_history" not in st.session_state:
     st.session_state.conversation_history = []
 if "current_conversation" not in st.session_state:
@@ -44,9 +69,19 @@ with st.sidebar:
 faiss_index = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
 llm = get_groq_llm()
 
+# Function to render messages with icons
+def render_message(role, content):
+    icon = "👤" if role == "user" else "🤖"
+    st.markdown(f"""
+    <div class="message">
+        <span class="message-icon">{icon}</span>
+        <div class="message-content"><strong>{role.capitalize()}:</strong> {content}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 # Display existing messages
 for message in st.session_state.current_conversation["messages"]:
-    st.write(f"**{message['role'].capitalize()}:** {message['content']}")
+    render_message(message['role'], message['content'])
     if message["role"] == "assistant" and "sources" in message:
         with st.expander("Sources"):
             for source in message["sources"].split("\n\n"):
@@ -56,14 +91,14 @@ for message in st.session_state.current_conversation["messages"]:
 if prompt := st.chat_input("Ask a question from the PDF files"):
     st.session_state.current_conversation["messages"].append({"role": "user", "content": prompt})
     
-    st.write(f"**User:** {prompt}")
+    render_message("user", prompt)
 
     with st.spinner("Processing..."):
         chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
 
         response = get_response_llm(llm, faiss_index, prompt, chat_history)
 
-        st.write(f"**Assistant:** {response['answer']}")
+        render_message("assistant", response['answer'])
 
         assistant_msg = {
             "role": "assistant",
