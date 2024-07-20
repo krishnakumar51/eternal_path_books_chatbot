@@ -46,35 +46,32 @@ llm = get_groq_llm()
 
 # Display existing messages
 for message in st.session_state.current_conversation["messages"]:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-        if message["role"] == "assistant" and "sources" in message:
-            with st.expander("Sources"):
-                for source in message["sources"].split("\n\n"):
-                    st.markdown(f"- {source.strip()}")
+    st.write(f"**{message['role'].capitalize()}:** {message['content']}")
+    if message["role"] == "assistant" and "sources" in message:
+        with st.expander("Sources"):
+            for source in message["sources"].split("\n\n"):
+                st.markdown(f"- {source.strip()}")
 
 # Handle new user input
 if prompt := st.chat_input("Ask a question from the PDF files"):
     st.session_state.current_conversation["messages"].append({"role": "user", "content": prompt})
     
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    st.write(f"**User:** {prompt}")
 
-    with st.chat_message("assistant"):
-        with st.spinner("Processing..."):
-            chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
+    with st.spinner("Processing..."):
+        chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
 
-            response = get_response_llm(llm, faiss_index, prompt, chat_history)
+        response = get_response_llm(llm, faiss_index, prompt, chat_history)
 
-            st.markdown(response["answer"])
+        st.write(f"**Assistant:** {response['answer']}")
 
-            assistant_msg = {
-                "role": "assistant",
-                "content": response["answer"],
-                "sources": response["sources"]
-            }
-            st.session_state.current_conversation["messages"].append(assistant_msg)
+        assistant_msg = {
+            "role": "assistant",
+            "content": response["answer"],
+            "sources": response["sources"]
+        }
+        st.session_state.current_conversation["messages"].append(assistant_msg)
 
-            with st.expander("Sources"):
-                for source in response["sources"].split("\n\n"):
-                    st.markdown(f"- {source.strip()}")
+        with st.expander("Sources"):
+            for source in response["sources"].split("\n\n"):
+                st.markdown(f"- {source.strip()}")
