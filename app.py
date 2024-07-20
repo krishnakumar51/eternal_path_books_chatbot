@@ -41,48 +41,37 @@ with st.sidebar:
         if st.button(f"Load Chat {i+1}"):
             load_chat(i)
 
-messages_container = st.container()
-
 faiss_index = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
 llm = get_groq_llm()
 
-def display_messages():
-    messages = st.session_state.current_conversation["messages"]
-    for message in messages:
-        with messages_container.chat_message(message["role"]):
-            st.markdown(message["content"])
-            if message["role"] == "assistant" and "sources" in message:
-                with st.expander("Sources"):
-                    for source in message["sources"].split("\n\n"):
-                        st.markdown(f"- {source.strip()}")
+# Display existing messages
+for message in st.session_state.current_conversation["messages"]:
+    st.write(f"**{message['role'].capitalize()}:** {message['content']}")
+    if message["role"] == "assistant" and "sources" in message:
+        with st.expander("Sources"):
+            for source in message["sources"].split("\n\n"):
+                st.markdown(f"<div class='source-container'>{source.strip()}</div>", unsafe_allow_html=True)
 
-display_messages()
-
+# Handle new user input
 if prompt := st.chat_input("Ask a question from the PDF files"):
-    user_msg = {"role": "user", "content": prompt}
-    st.session_state.current_conversation["messages"].append(user_msg)
+    st.session_state.current_conversation["messages"].append({"role": "user", "content": prompt})
+    
+    st.write(f"**User:** {prompt}")
 
-    with messages_container.chat_message("user"):
-        st.markdown(prompt)
+    with st.spinner("Processing..."):
+        chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
 
-    with messages_container.chat_message("assistant"):
-        with st.spinner("Processing..."):
-            chat_history = [(msg["content"], msg["content"]) for msg in st.session_state.current_conversation["messages"] if msg["role"] == "assistant"]
+        response = get_response_llm(llm, faiss_index, prompt, chat_history)
 
-            response = get_response_llm(llm, faiss_index, prompt, chat_history)
+        st.write(f"**Assistant:** {response['answer']}")
 
-            st.markdown(response["answer"])
+        assistant_msg = {
+            "role": "assistant",
+            "content": response["answer"],
+            "sources": response["sources"]
+        }
+        st.session_state.current_conversation["messages"].append(assistant_msg)
 
-            assistant_msg = {
-                "role": "assistant",
-                "content": response["answer"],
-                "sources": response["sources"]
-            }
-            st.session_state.current_conversation["messages"].append(assistant_msg)
-
-            with st.expander("Sources"):
-                for source in response["sources"].split("\n\n"):
-                    st.markdown(f"- {source.strip()}")
-                    st.markdown("---")
-
-    display_messages()
+        with st.expander("Sources"):
+            for source in response["sources"].split("\n\n"):
+                st.markdown(f"<div class='source-container'>{source.strip()}</div>", unsafe_allow_html=True)
